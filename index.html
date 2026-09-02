@@ -209,6 +209,7 @@
       <button id="breathBtn" class="on">停 止</button>
       <span id="cycleDone"></span>
       <button id="soundBtn" title="微弱的环境声与提示音">声 音 关</button>
+      <button id="soundKind" title="切换环境音：风 · 雨 · 颂钵 · 琴">· 风 ·</button>
     </div>
     <p class="hint" style="margin-top:26px">四秒吸入 · 四秒停住 · 六秒呼出 · 呼吸会自己找到节奏</p>
   </section>
@@ -271,7 +272,9 @@
   });
 
   /* ---------- 声音（全部本地生成，无外部文件） ---------- */
-  var AC = null, noiseNode = null, soundOn = false;
+  var AC = null, soundOn = false, ambientKind = "wind", ambient = null;
+  var KINDS = ["wind", "rain", "bowl", "qin"];
+  var KIND_NAMES = { wind: "风", rain: "雨", bowl: "钵", qin: "琴" };
   function ensureAC() {
     if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
     if (AC.state === "suspended") AC.resume();
@@ -290,30 +293,106 @@
       o.start(t); o.stop(t + 2.4);
     });
   }
-  function toggleAmbient(on) {
-    var ac = ensureAC();
-    if (on && !noiseNode) {
-      var len = ac.sampleRate * 2, buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0), last = 0;
-      for (var i = 0; i < len; i++) { var w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = last * 3.2; }
-      var src = ac.createBufferSource(); src.buffer = buf; src.loop = true;
-      var f = ac.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 320;
-      var g = ac.createGain(); g.gain.value = 0;
-      src.connect(f).connect(g).connect(ac.destination); src.start();
-      g.gain.linearRampToValueAtTime(0.05, ac.currentTime + 3);
-      noiseNode = { src: src, g: g };
-    } else if (!on && noiseNode) {
-      noiseNode.g.gain.linearRampToValueAtTime(0, ac.currentTime + 1);
-      var n = noiseNode; noiseNode = null;
-      setTimeout(function () { n.src.stop(); }, 1200);
-    }
+  function makeNoiseBuffer(ac) {
+    var len = ac.sampleRate * 2, buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0), last = 0;
+    for (var i = 0; i < len; i++) { var w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = last * 3.2; }
+    return buf;
   }
-  var soundBtn = document.getElementById("soundBtn");
+  function stopAmbient() {
+    if (!ambient) return;
+    var a = ambient; ambient = null;
+    try {
+      a.g.gain.cancelScheduledValues(AC.currentTime);
+      a.g.gain.setValueAtTime(a.g.gain.value, AC.currentTime);
+      a.g.gain.linearRampToValueAtTime(0, AC.currentTime + 1);
+    } catch (e) {}
+    setTimeout(function () {
+      a.stops.forEach(function (s) { try { s.stop(); } catch (e) {} });
+      if (a.timers) a.timers.forEach(function (t) { clearInterval(t); clearTimeout(t); });
+    }, 1200);
+  }
+  function startAmbient() {
+    var ac = ensureAC();
+    stopAmbient();
+    var master = ac.createGain(); master.gain.value = 0;
+    master.connect(ac.destination);
+    var stops = [], timers = [];
+    if (ambientKind === "wind") {
+      var ws = ac.createBufferSource(); ws.buffer = makeNoiseBuffer(ac); ws.loop = true;
+      var wf = ac.createBiquadFilter(); wf.type = "lowpass"; wf.frequency.value = 320;
+      ws.connect(wf).connect(master); ws.start(); stops.push(ws);
+      master.gain.linearRampToValueAtTime(0.05, ac.currentTime + 3);
+    } else if (ambientKind === "rain") {
+      var nbuf = makeNoiseBuffer(ac);
+      var rs = ac.createBufferSource(); rs.buffer = nbuf; rs.loop = true; rs.playbackRate.value = 1.6;
+      var hp = ac.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 900;
+      var lp = ac.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 7000;
+      rs.connect(hp).connect(lp).connect(master); rs.start(); stops.push(rs);
+      master.gain.linearRampToValueAtTime(0.04, ac.currentTime + 2);
+      timers.push(setInterval(function () {
+        for (var k = 0; k < 3; k++) setTimeout(function () {
+          var t = ac.currentTime;
+          var ds = ac.createBufferSource(); ds.buffer = nbuf;
+          var bf = ac.createBiquadFilter(); bf.type = "bandpass"; bf.frequency.value = 2000 + Math.random() * 4000; bf.Q.value = 9;
+          var g = ac.createGain();
+          g.gain.setValueAtTime(0.04 + Math.random() * 0.03, t);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+          ds.connect(bf).connect(g).connect(ac.destination);
+          ds.start(t); ds.stop(t + 0.15);
+        }, Math.random() * 400);
+      }, 500));
+    } else if (ambientKind === "bowl") {
+      [[110, .5], [165, .3], [220, .22], [330, .1], [550, .04]].forEach(function (p) {
+        var o = ac.createOscillator(); o.type = "sine";
+        o.frequency.value = p[0] * (1 + (Math.random() - .5) * 0.002);
+        var g = ac.createGain(); g.gain.value = p[1];
+        o.connect(g).connect(master); o.start(); stops.push(o);
+      });
+      var lfo = ac.createOscillator(); lfo.frequency.value = 0.08;
+      var lg = ac.createGain(); lg.gain.value = 0.01;
+      lfo.connect(lg).connect(master.gain); lfo.start(); stops.push(lfo);
+      master.gain.linearRampToValueAtTime(0.035, ac.currentTime + 4);
+    } else if (ambientKind === "qin") {
+      var scale = [261.63, 293.66, 329.63, 392, 440, 523.25, 587.33];
+      var pad = ac.createOscillator(); pad.type = "sine"; pad.frequency.value = 130.81;
+      var padG = ac.createGain(); padG.gain.value = 0.02;
+      pad.connect(padG).connect(master); pad.start(); stops.push(pad);
+      master.gain.linearRampToValueAtTime(1, ac.currentTime + 3);
+      (function note() {
+        if (!ambient || ambientKind !== "qin") return;
+        var t = ac.currentTime;
+        var f0 = scale[Math.floor(Math.random() * scale.length)];
+        [[f0, 0.045], [f0 * 2, 0.012], [f0 * 3, 0.004]].forEach(function (p) {
+          var o = ac.createOscillator(); o.type = "sine"; o.frequency.value = p[0];
+          var g = ac.createGain();
+          g.gain.setValueAtTime(0, t);
+          g.gain.linearRampToValueAtTime(p[1], t + 0.015);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 2.2);
+          o.connect(g).connect(ac.destination);
+          o.start(t); o.stop(t + 2.4);
+        });
+        timers.push(setTimeout(note, 1600 + Math.random() * 3200));
+      })();
+    }
+    ambient = { g: master, stops: stops, timers: timers };
+  }
+  var soundBtn = document.getElementById("soundBtn"),
+      soundKindBtn = document.getElementById("soundKind");
   soundBtn.addEventListener("click", function () {
     soundOn = !soundOn;
     soundBtn.textContent = soundOn ? "声 音 开" : "声 音 关";
     soundBtn.classList.toggle("on", soundOn);
-    toggleAmbient(soundOn);
-    if (soundOn) chime(396);
+    if (soundOn) { startAmbient(); chime(396); } else stopAmbient();
+  });
+  soundKindBtn.addEventListener("click", function () {
+    ambientKind = KINDS[(KINDS.indexOf(ambientKind) + 1) % KINDS.length];
+    soundKindBtn.textContent = "· " + KIND_NAMES[ambientKind] + " ·";
+    if (!soundOn) {
+      soundOn = true;
+      soundBtn.textContent = "声 音 开";
+      soundBtn.classList.add("on");
+    }
+    startAmbient();
   });
 
   /* ---------- 呼吸 ---------- */
