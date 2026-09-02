@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>静角 · 一个让你安静下来的地方</title>
+<style>
+  :root {
+    --bg-deep: #0d1420;
+    --bg-mid: #16202f;
+    --ink: #dce4ee;
+    --ink-dim: #7d8a9c;
+    --warm: #e3b284;
+    --warm-dim: #a98c6b;
+    --line: rgba(220, 228, 238, 0.08);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: linear-gradient(160deg, var(--bg-deep) 0%, var(--bg-mid) 60%, #1b2736 100%);
+    color: var(--ink);
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  /* 慢慢浮现的星尘 */
+  .stars {
+    position: fixed; inset: 0; pointer-events: none;
+    background-image:
+      radial-gradient(1px 1px at 20% 30%, rgba(220,228,238,.35) 50%, transparent 50%),
+      radial-gradient(1px 1px at 70% 20%, rgba(220,228,238,.25) 50%, transparent 50%),
+      radial-gradient(1.5px 1.5px at 40% 70%, rgba(227,178,132,.30) 50%, transparent 50%),
+      radial-gradient(1px 1px at 85% 60%, rgba(220,228,238,.20) 50%, transparent 50%),
+      radial-gradient(1px 1px at 10% 80%, rgba(220,228,238,.18) 50%, transparent 50%),
+      radial-gradient(1.5px 1.5px at 60% 85%, rgba(227,178,132,.22) 50%, transparent 50%);
+    animation: drift 120s linear infinite alternate;
+  }
+  @keyframes drift { from { transform: translate(0,0);} to { transform: translate(-30px, 20px);} }
+
+  header {
+    position: fixed; top: 0; left: 0; right: 0;
+    display: flex; justify-content: center; gap: 2.2em;
+    padding: 26px 20px 0;
+    z-index: 10;
+  }
+  header button {
+    background: none; border: none; cursor: pointer;
+    font-size: 15px; letter-spacing: .35em; padding: 6px 2px;
+    color: var(--ink-dim);
+    font-family: "SimSun", "Songti SC", serif;
+    transition: color .8s;
+  }
+  header button.active { color: var(--warm); }
+  header button:hover { color: var(--ink); }
+
+  main { height: 100%; position: relative; }
+  section {
+    position: absolute; inset: 0;
+    display: none; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 70px 24px 40px;
+    animation: sectionIn 1.4s ease;
+  }
+  section.show { display: flex; }
+  @keyframes sectionIn { from { opacity: 0; transform: translateY(12px);} to { opacity: 1; transform: none;} }
+
+  .hint { color: var(--ink-dim); font-size: 13px; letter-spacing: .2em; }
+  .serif { font-family: "SimSun", "Songti SC", serif; }
+
+  /* ---------- 呼吸 ---------- */
+  .breath-stage { position: relative; width: 320px; height: 320px; display: grid; place-items: center; }
+  .breath-ring {
+    position: absolute; width: 300px; height: 300px; border-radius: 50%;
+    border: 1px solid var(--line);
+  }
+  .breath-ring::after {
+    content: ""; position: absolute; inset: 14px; border-radius: 50%;
+    border: 1px dashed rgba(227,178,132,.18);
+  }
+  .breath-orb {
+    width: 150px; height: 150px; border-radius: 50%;
+    background: radial-gradient(circle at 38% 32%, rgba(227,178,132,.75), rgba(227,178,132,.18) 55%, rgba(227,178,132,.05) 75%);
+    box-shadow: 0 0 60px rgba(227,178,132,.25), 0 0 120px rgba(227,178,132,.10);
+    transform: scale(.62);
+    transition: transform 4s cubic-bezier(.4,0,.4,1);
+  }
+  .breath-label {
+    position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+    white-space: nowrap;
+    font-size: 20px; letter-spacing: .5em; text-indent: .5em;
+    color: var(--ink);
+  }
+  .breath-count {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    font-size: 13px; color: var(--ink-dim); letter-spacing: .1em;
+    mix-blend-mode: screen;
+  }
+  .breath-meta { margin-top: 64px; display: flex; align-items: center; gap: 26px; }
+  .breath-meta button, .mode-btn {
+    background: none; border: 1px solid var(--line); border-radius: 999px;
+    color: var(--ink-dim); font-size: 13px; letter-spacing: .25em; text-indent: .25em;
+    padding: 9px 22px; cursor: pointer; transition: all .6s;
+    font-family: inherit;
+  }
+  .breath-meta button:hover, .mode-btn:hover { border-color: rgba(227,178,132,.4); color: var(--warm); }
+  .breath-meta button.on { color: var(--warm); border-color: rgba(227,178,132,.4); }
+  #cycleDone { font-size: 12px; color: var(--ink-dim); letter-spacing: .15em; min-width: 90px; }
+
+  /* ---------- 放下 ---------- */
+  .put-box { width: min(520px, 88vw); text-align: center; }
+  .put-box h2 { font-size: 17px; font-weight: normal; letter-spacing: .3em; color: var(--ink); margin-bottom: 26px; }
+  textarea {
+    width: 100%; height: 110px; resize: none;
+    background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 12px;
+    color: var(--ink); font-size: 15px; line-height: 1.9; padding: 16px;
+    font-family: inherit; outline: none; transition: border-color .6s;
+    -webkit-user-select: text; user-select: text;
+  }
+  textarea:focus { border-color: rgba(227,178,132,.35); }
+  textarea::placeholder { color: #5a6577; }
+  .put-actions { margin-top: 18px; }
+  .put-note { margin-top: 34px; font-size: 13px; color: var(--ink-dim); letter-spacing: .15em; min-height: 20px; transition: opacity 1.2s; }
+  .drift {
+    position: fixed; z-index: 5; pointer-events: none;
+    color: rgba(220,228,238,.8); font-size: 14px; letter-spacing: .1em;
+    max-width: 420px; text-align: center;
+    animation: driftUp 3.6s ease-in forwards;
+  }
+  @keyframes driftUp {
+    0%   { opacity: 0; transform: translateY(0) rotate(0deg); filter: blur(0); }
+    12%  { opacity: .9; }
+    100% { opacity: 0; transform: translateY(-55vh) rotate(4deg); filter: blur(5px); }
+  }
+
+  /* ---------- 静坐 ---------- */
+  .sit-time { font-size: 88px; font-weight: 200; letter-spacing: .06em; color: var(--ink); }
+  .sit-time small { font-size: 24px; color: var(--ink-dim); }
+  .sit-dot {
+    width: 10px; height: 10px; border-radius: 50%; margin: 40px auto 0;
+    background: var(--warm-dim);
+    animation: sitPulse 5.5s ease-in-out infinite;
+  }
+  @keyframes sitPulse { 0%,100% { opacity:.35; transform: scale(1);} 50% { opacity:.9; transform: scale(1.35);} }
+  .sit-presets { margin-top: 48px; display: flex; gap: 16px; }
+  .sit-msg { margin-top: 30px; font-size: 14px; color: var(--warm); letter-spacing: .2em; min-height: 20px; opacity: 0; transition: opacity 2s; }
+  .sit-msg.show { opacity: 1; }
+
+  footer {
+    position: fixed; bottom: 18px; left: 0; right: 0; text-align: center;
+    font-size: 11px; color: #4d5768; letter-spacing: .3em; z-index: 1;
+  }
+</style>
+</head>
+<body>
+<div class="stars"></div>
+
+<header>
+  <button data-mode="breath" class="active serif">呼吸</button>
+  <button data-mode="put" class="serif">放下</button>
+  <button data-mode="sit" class="serif">静坐</button>
+</header>
+
+<main>
+  <!-- 呼吸 -->
+  <section id="breath" class="show">
+    <div class="breath-stage">
+      <div class="breath-ring"></div>
+      <div class="breath-orb" id="orb"></div>
+      <div class="breath-count" id="breathCount"></div>
+      <div class="breath-label serif" id="breathLabel">准备好了吗</div>
+    </div>
+    <div class="breath-meta">
+      <button id="breathBtn" class="on">停 止</button>
+      <span id="cycleDone"></span>
+      <button id="soundBtn" title="微弱的环境声与提示音">声 音 关</button>
+    </div>
+    <p class="hint" style="margin-top:26px">四秒吸入 · 四秒停住 · 六秒呼出 · 呼吸会自己找到节奏</p>
+  </section>
+
+  <!-- 放下 -->
+  <section id="put">
+    <div class="put-box">
+      <h2 class="serif">那件让你烦的事，写下来</h2>
+      <textarea id="worryText" placeholder="不用写得有条理，乱七八糟也行……" spellcheck="false"></textarea>
+      <div class="put-actions">
+        <button class="mode-btn" id="putBtn">放 下 它</button>
+      </div>
+      <p class="put-note" id="putNote"></p>
+    </div>
+  </section>
+
+  <!-- 静坐 -->
+  <section id="sit">
+    <div class="sit-time serif" id="sitTime">5<small> 分钟</small></div>
+    <div class="sit-dot"></div>
+    <p class="sit-msg" id="sitMsg"></p>
+    <div class="sit-presets">
+      <button class="mode-btn" data-min="3">三 分钟</button>
+      <button class="mode-btn" data-min="5">五 分钟</button>
+      <button class="mode-btn" data-min="10">十 分钟</button>
+      <button class="mode-btn" id="sitStart">开 始</button>
+    </div>
+    <p class="hint" style="margin-top:26px">什么都不用做 · 眼睛可以闭上 · 结束时会有轻轻一声钟</p>
+  </section>
+</main>
+
+<footer>静 角 · 造 于 一 个 九 月 的 晚 上</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- 模式切换 ---------- */
+  var sections = { breath: document.getElementById("breath"),
+                   put: document.getElementById("put"),
+                   sit: document.getElementById("sit") };
+  Array.prototype.forEach.call(document.querySelectorAll("header button"), function (b) {
+    b.addEventListener("click", function () {
+      Array.prototype.forEach.call(document.querySelectorAll("header button"), function (x) { x.classList.remove("active"); });
+      b.classList.add("active");
+      Object.keys(sections).forEach(function (k) { sections[k].classList.toggle("show", k === b.dataset.mode); });
+      if (b.dataset.mode === "sit") resetSit();
+    });
+  });
+
+  /* ---------- 声音（全部本地生成，无外部文件） ---------- */
+  var AC = null, noiseNode = null, soundOn = false;
+  function ensureAC() {
+    if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === "suspended") AC.resume();
+    return AC;
+  }
+  function chime(freq) {
+    if (!soundOn) return;
+    var ac = ensureAC(), t = ac.currentTime;
+    [[freq || 528, 0.09], [(freq || 528) * 2, 0.028]].forEach(function (p) {
+      var o = ac.createOscillator(), g = ac.createGain();
+      o.type = "sine"; o.frequency.value = p[0];
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(p[1], t + 0.04);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 2.2);
+      o.connect(g).connect(ac.destination);
+      o.start(t); o.stop(t + 2.4);
+    });
+  }
+  function toggleAmbient(on) {
+    var ac = ensureAC();
+    if (on && !noiseNode) {
+      var len = ac.sampleRate * 2, buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0), last = 0;
+      for (var i = 0; i < len; i++) { var w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = last * 3.2; }
+      var src = ac.createBufferSource(); src.buffer = buf; src.loop = true;
+      var f = ac.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 320;
+      var g = ac.createGain(); g.gain.value = 0;
+      src.connect(f).connect(g).connect(ac.destination); src.start();
+      g.gain.linearRampToValueAtTime(0.05, ac.currentTime + 3);
+      noiseNode = { src: src, g: g };
+    } else if (!on && noiseNode) {
+      noiseNode.g.gain.linearRampToValueAtTime(0, ac.currentTime + 1);
+      var n = noiseNode; noiseNode = null;
+      setTimeout(function () { n.src.stop(); }, 1200);
+    }
+  }
+  var soundBtn = document.getElementById("soundBtn");
+  soundBtn.addEventListener("click", function () {
+    soundOn = !soundOn;
+    soundBtn.textContent = soundOn ? "声 音 开" : "声 音 关";
+    soundBtn.classList.toggle("on", soundOn);
+    toggleAmbient(soundOn);
+    if (soundOn) chime(396);
+  });
+
+  /* ---------- 呼吸 ---------- */
+  var orb = document.getElementById("orb"),
+      breathLabel = document.getElementById("breathLabel"),
+      breathCount = document.getElementById("breathCount"),
+      breathBtn = document.getElementById("breathBtn"),
+      cycleDoneEl = document.getElementById("cycleDone"),
+      breathing = false, timer = null, ticker = null, cycles = 0;
+
+  function setOrb(scale, secs) {
+    orb.style.transition = "transform " + secs + "s cubic-bezier(.4,0,.4,1)";
+    orb.style.transform = "scale(" + scale + ")";
+  }
+  function phase(name, secs, next, chimeFreq) {
+    breathLabel.textContent = name;
+    chime(chimeFreq);
+    var left = secs;
+    breathCount.textContent = left + " 秒";
+    clearInterval(ticker);
+    ticker = setInterval(function () {
+      left--; breathCount.textContent = Math.max(left, 0) + " 秒";
+    }, 1000);
+    timer = setTimeout(function () { next(); }, secs * 1000);
+  }
+  function loop() {
+    setOrb(1.18, 4);
+    phase("吸 气", 4, function () {
+      phase("停 住", 4, function () {
+        setOrb(0.62, 6);
+        phase("呼 气", 6, function () {
+          phase("停 一 停", 2, function () {
+            cycles++; cycleDoneEl.textContent = "已呼吸 " + cycles + " 轮";
+            loop();
+          }, 396);
+        }, 528);
+      });
+    }, 528);
+  }
+  function startBreath() {
+    breathing = true; breathBtn.textContent = "停 止"; breathBtn.classList.add("on");
+    cycles = 0; cycleDoneEl.textContent = "";
+    loop();
+  }
+  function stopBreath() {
+    breathing = false; breathBtn.textContent = "开 始"; breathBtn.classList.remove("on");
+    clearTimeout(timer); clearInterval(ticker);
+    setOrb(0.62, 2); breathLabel.textContent = "准备好了吗"; breathCount.textContent = "";
+  }
+  breathBtn.addEventListener("click", function () { breathing ? stopBreath() : startBreath(); });
+  stopBreath();
+
+  /* ---------- 放下 ---------- */
+  var putBtn = document.getElementById("putBtn"),
+      worryText = document.getElementById("worryText"),
+      putNote = document.getElementById("putNote"),
+      putCount = 0;
+  try { putCount = parseInt(localStorage.getItem("jingjiao.putdown") || "0", 10) || 0; } catch (e) {}
+
+  putBtn.addEventListener("click", function () {
+    var t = worryText.value.trim();
+    if (!t) {
+      putNote.textContent = "写点什么再放下，哪怕只有一个字";
+      worryText.focus();
+      return;
+    }
+    var el = document.createElement("div");
+    el.className = "drift serif";
+    el.textContent = t.length > 40 ? t.slice(0, 40) + "……" : t;
+    var r = worryText.getBoundingClientRect();
+    el.style.left = r.left + "px";
+    el.style.top = (r.bottom + 6) + "px";
+    document.body.appendChild(el);
+    setTimeout(function () { el.remove(); }, 3700);
+    worryText.value = "";
+    putCount++;
+    try { localStorage.setItem("jingjiao.putdown", String(putCount)); } catch (e) {}
+    chime(345);
+    var msgs = [
+      "它不会消失，但今晚可以先放在这里",
+      "你已经看过它一眼了，这就够了",
+      "放下的东西，不替你保管，也不替你记住",
+      "夜还长，事不急"
+    ];
+    putNote.style.opacity = 0;
+    setTimeout(function () {
+      putNote.textContent = msgs[putCount % msgs.length] + " · 这是你在静角放下的第 " + putCount + " 件事";
+      putNote.style.opacity = 1;
+    }, 500);
+  });
+  worryText.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) putBtn.click();
+  });
+
+  /* ---------- 静坐 ---------- */
+  var sitTime = document.getElementById("sitTime"),
+      sitMsg = document.getElementById("sitMsg"),
+      sitStart = document.getElementById("sitStart"),
+      sitMins = 5, sitTimer = null, sitting = false;
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-min]"), function (b) {
+    b.addEventListener("click", function () {
+      if (sitting) return;
+      sitMins = parseInt(b.dataset.min, 10);
+      sitTime.innerHTML = sitMins + "<small> 分钟</small>";
+    });
+  });
+  function fmt(s) {
+    var m = Math.floor(s / 60), ss = s % 60;
+    return (m < 10 ? "0" : "") + m + ":" + (ss < 10 ? "0" : "") + ss;
+  }
+  function resetSit() {
+    sitting = false; clearInterval(sitTimer);
+    sitTime.innerHTML = sitMins + "<small> 分钟</small>";
+    sitMsg.classList.remove("show");
+    sitStart.textContent = "开 始";
+  }
+  sitStart.addEventListener("click", function () {
+    if (sitting) { resetSit(); return; }
+    sitting = true; sitStart.textContent = "结 束";
+    var left = sitMins * 60;
+    sitTime.textContent = fmt(left);
+    sitMsg.textContent = "";
+    chime(528);
+    sitTimer = setInterval(function () {
+      left--;
+      sitTime.textContent = fmt(Math.max(left, 0));
+      if (left <= 0) {
+        clearInterval(sitTimer); sitting = false;
+        chime(528); setTimeout(function () { chime(396); }, 900);
+        sitTime.innerHTML = sitMins + "<small> 分钟</small>";
+        sitMsg.textContent = "好了，回去吧。";
+        sitMsg.classList.add("show");
+        sitStart.textContent = "开 始";
+      }
+    }, 1000);
+  });
+})();
+</script>
+</body>
+</html>
