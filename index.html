@@ -128,9 +128,9 @@
   .past-entry { margin-top: 12px; }
   .drift {
     position: fixed; z-index: 15; pointer-events: none;
-    color: rgba(220,228,238,.92); font-size: 19px; letter-spacing: .12em;
-    max-width: 60vw; text-align: center; line-height: 1.7;
-    text-shadow: 0 0 14px rgba(220,228,238,.25);
+    color: rgba(220,228,238,.82); font-size: 15px; letter-spacing:.1em;
+    max-width: 56vw; text-align: center; line-height: 1.7;
+    text-shadow: 0 0 8px rgba(220,228,238,.18);
     will-change: transform, opacity;
   }
   .beach {
@@ -150,32 +150,61 @@
   }
   #beachWritings { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
   .sand-word {
-    position: absolute; font-size: 13px; letter-spacing: .16em; line-height: 1.9;
-    color: rgba(220,228,238,.62); max-width: 46%; text-align: center;
+    position: absolute; font-size: 12px; letter-spacing: .14em; line-height: 1.9;
+    color: rgba(220,228,238,.58); max-width: 44%; text-align: center;
     text-shadow: 0 1px 2px rgba(10,15,24,.85);
     transform: rotate(var(--rot, 0deg));
     transition: opacity 2.8s ease, filter 2.8s ease, transform 2.8s ease;
   }
-  .sand-word.demo { font-size: 16px; max-width: none; white-space: nowrap; color: rgba(220,228,238,.7); }
+  .sand-word.demo { font-size: 14px; max-width: none; white-space: nowrap; color: rgba(220,228,238,.68); }
   .wave {
-    position: absolute; left: -30%; width: 160%; bottom: -2%; pointer-events: none;
-    background: linear-gradient(to top, rgba(96,126,166,.20), rgba(96,126,166,.07) 65%, transparent);
-    border-radius: 46% 54% 0 0 / 90% 75% 0 0;
+    position: absolute; left: -35%; width: 170%; bottom: -3%; pointer-events: none;
+    background:
+      repeating-linear-gradient(100deg, rgba(150,180,215,.05) 0 16px, transparent 16px 46px),
+      linear-gradient(to top, rgba(96,126,166,.24), rgba(96,126,166,.09) 58%, rgba(96,126,166,.02) 82%, transparent);
+    border-radius: 48% 52% 0 0 / 88% 76% 0 0;
     transition: height 2.5s ease;
+    will-change: transform;
   }
+  /* 浪尖泡沫：碎块状亮斑，随浪缓缓平移 */
   .wave::before {
-    content: ""; position: absolute; top: -2px; left: 8%; right: 8%; height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(220,228,238,.32), transparent);
-    border-radius: 50%; filter: blur(1.5px);
+    content: ""; position: absolute; top: -3px; left: 5%; right: 5%; height: 3px;
+    background: repeating-linear-gradient(90deg,
+      transparent 0 10px, rgba(224,232,244,.5) 10px 28px,
+      rgba(224,232,244,.14) 28px 42px, transparent 42px 62px);
+    background-size: 124px 3px;
+    border-radius: 50%; filter: blur(1.3px);
+    animation: foamSlide 6.5s linear infinite;
   }
-  .w-back { height: 34%; z-index: 3; animation: waveBack 13s ease-in-out infinite alternate; }
-  .w-front { height: 27%; z-index: 4; animation: waveFront 9s ease-in-out infinite alternate; animation-delay: -4s; }
-  @keyframes waveBack { from { transform: translate(-2.5%, 9%); } to { transform: translate(2.5%, -6%); } }
-  @keyframes waveFront { from { transform: translate(3%, 8%); } to { transform: translate(-3%, -10%); } }
-  .beach.surge .w-front { animation-duration: 2s; height: 40%; }
-  .beach.surge .w-back { animation-duration: 2.9s; height: 46%; }
+  /* 浪尖下的一层微光，像水反着天光 */
+  .wave::after {
+    content: ""; position: absolute; top: 0; left: 10%; right: 10%; height: 16px;
+    background: linear-gradient(to bottom, rgba(190,212,238,.15), transparent);
+    border-radius: 50%; filter: blur(3px);
+  }
+  @keyframes foamSlide { to { background-position: 124px 0; } }
+  .w-back  { height: 37%; z-index: 3; opacity: .8; animation: waveBack 12s ease-in-out infinite alternate; }
+  .w-mid   { height: 31%; z-index: 4; opacity: .9; left: -28%; width: 156%; animation: waveMid 10s ease-in-out infinite alternate; animation-delay: -3s; }
+  .w-front { height: 26%; z-index: 5; left: -32%; width: 164%; animation: waveFront 8.5s ease-in-out infinite alternate; animation-delay: -5s; }
+  /* 每层浪除了平移，边缘的弧度也在缓慢变形——浪脊会换位置 */
+  @keyframes waveBack {
+    0%   { transform: translate(-3.5%, 9%)  scaleX(1);    border-radius: 46% 54% 0 0 / 92% 74% 0 0; }
+    100% { transform: translate(3.5%, -7%)  scaleX(1.04); border-radius: 54% 46% 0 0 / 78% 92% 0 0; }
+  }
+  @keyframes waveMid {
+    0%   { transform: translate(4%, 10%)  scaleX(1.02); border-radius: 56% 44% 0 0 / 80% 90% 0 0; }
+    100% { transform: translate(-4%, -8%) scaleX(1);    border-radius: 44% 56% 0 0 / 90% 78% 0 0; }
+  }
+  @keyframes waveFront {
+    0%   { transform: translate(3.5%, 13%)  scaleX(1);    border-radius: 42% 58% 0 0 / 88% 72% 0 0; }
+    55%  { transform: translate(-1%, -12%)  scaleX(1.05); }
+    100% { transform: translate(-3.5%, 7%)  scaleX(1.01); border-radius: 58% 42% 0 0 / 76% 94% 0 0; }
+  }
+  .beach.surge .w-front { animation-duration: 2.2s; height: 42%; }
+  .beach.surge .w-mid   { animation-duration: 3s;   height: 48%; }
+  .beach.surge .w-back  { animation-duration: 3.8s; height: 52%; }
   .beach-hint {
-    position: absolute; top: 10px; right: 14px; z-index: 5;
+    position: absolute; top: 10px; right: 14px; z-index: 6;
     font-size: 11px; color: #4d5768; letter-spacing: .18em;
     pointer-events: none;
   }
@@ -272,6 +301,7 @@
       <div class="beach-sand"></div>
       <div id="beachWritings"></div>
       <div class="wave w-back"></div>
+      <div class="wave w-mid"></div>
       <div class="wave w-front"></div>
       <p class="beach-hint">长按沙滩 · 看浪如何抚平字迹</p>
     </div>
@@ -537,17 +567,17 @@
     if (el.animate) {
       var drop = el.animate([
         { transform: "translate(0,0) scale(1) rotate(0deg)", opacity: 0 },
-        { transform: "translate(" + tx * 0.14 + "px,-44px) scale(.95) rotate(1.5deg)", opacity: .95, offset: .24 },
-        { transform: "translate(" + tx * 0.58 + "px," + ty * 0.32 + "px) scale(.8) rotate(-1deg)", opacity: .9, offset: .58 },
-        { transform: "translate(" + tx + "px," + ty + "px) scale(.62) rotate(" + rot + "deg)", opacity: .8 }
+        { transform: "translate(" + tx * 0.14 + "px,-44px) scale(.96) rotate(1.5deg)", opacity: .85, offset: .24 },
+        { transform: "translate(" + tx * 0.58 + "px," + ty * 0.32 + "px) scale(.88) rotate(-1deg)", opacity: .8, offset: .58 },
+        { transform: "translate(" + tx + "px," + ty + "px) scale(.82) rotate(" + rot + "deg)", opacity: .72 }
       ], { duration: 3400, easing: "cubic-bezier(.42,.08,.46,.94)" });
       drop.onfinish = land;
       setTimeout(function () { if (drop.playState !== "finished") drop.finish(); }, 3800);
     } else {
       el.style.transition = "transform 3.4s ease-in-out, opacity 1.2s";
       requestAnimationFrame(function () {
-        el.style.transform = "translate(" + tx + "px," + ty + "px) scale(.62)";
-        el.style.opacity = ".8";
+        el.style.transform = "translate(" + tx + "px," + ty + "px) scale(.82)";
+        el.style.opacity = ".72";
       });
       setTimeout(land, 3500);
     }
@@ -648,7 +678,7 @@
     var el = makeSandWord(shortText, d, xPct, yPct, rot);
     el.style.opacity = "0";
     el.style.filter = "blur(1px)";
-    el.style.transform = "rotate(var(--rot,0deg)) translateY(-6px) scale(1.12)";
+    el.style.transform = "rotate(var(--rot,0deg)) translateY(-5px) scale(1.06)";
     beachWritings.appendChild(el);
     /* 落定：像字迹轻轻压进沙里 */
     setTimeout(function () { applyErosion(el, d); }, 60);
