@@ -111,7 +111,7 @@
   .put-box { width: min(520px, 88vw); text-align: center; }
   .put-box h2 { font-size: 17px; font-weight: normal; letter-spacing: .3em; color: var(--ink); margin-bottom: 26px; }
   textarea {
-    width: 100%; height: 110px; resize: none;
+    width: 100%; height: 86px; resize: none;
     background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 12px;
     color: var(--ink); font-size: 15px; line-height: 1.9; padding: 16px;
     font-family: inherit; outline: none; transition: border-color .6s;
@@ -121,20 +121,63 @@
   textarea::placeholder { color: #5a6577; }
   .put-actions { margin-top: 18px; }
   .put-note { margin-top: 34px; font-size: 13px; color: var(--ink-dim); letter-spacing: .15em; min-height: 20px; transition: opacity 1.2s; }
+  /* ---------- 放下：记忆沙滩 ---------- */
+  #put { justify-content: flex-start; }
+  .put-box h2 { margin-bottom: 16px; }
+  .put-note { margin-top: 18px; }
+  .past-entry { margin-top: 12px; }
   .drift {
-    position: fixed; z-index: 5; pointer-events: none;
-    color: rgba(220,228,238,.9); font-size: 21px; letter-spacing: .12em;
-    max-width: 460px; text-align: center; line-height: 1.7;
-    text-shadow: 0 0 18px rgba(220,228,238,.3);
-    animation: smokeUp 5.6s ease-out forwards;
+    position: fixed; z-index: 15; pointer-events: none;
+    color: rgba(220,228,238,.92); font-size: 19px; letter-spacing: .12em;
+    max-width: 60vw; text-align: center; line-height: 1.7;
+    text-shadow: 0 0 14px rgba(220,228,238,.25);
+    will-change: transform, opacity;
   }
-  @keyframes smokeUp {
-    0%   { opacity: 0; transform: translate(0, 0) scale(.72) rotate(0deg); filter: blur(0); }
-    10%  { opacity: .95; }
-    30%  { transform: translate(16px, -16vh) scale(.9) rotate(1.5deg); filter: blur(1px); }
-    55%  { opacity: .7; transform: translate(-18px, -36vh) scale(1.05) rotate(-2deg); filter: blur(3px); }
-    80%  { opacity: .32; transform: translate(10px, -54vh) scale(1.18) rotate(1deg); filter: blur(7px); }
-    100% { opacity: 0; transform: translate(-8px, -68vh) scale(1.32) rotate(-1deg); filter: blur(13px); }
+  .beach {
+    position: relative; flex: 1; width: 100%; min-height: 240px;
+    margin-top: 4px; overflow: hidden; cursor: pointer;
+    touch-action: manipulation;
+  }
+  .beach-sand {
+    position: absolute; left: -12%; right: -12%; bottom: 0; height: 74%; z-index: 1;
+    background:
+      radial-gradient(1px 1px at 28% 62%, rgba(220,228,238,.15) 50%, transparent 50%),
+      radial-gradient(1px 1px at 66% 44%, rgba(220,228,238,.10) 50%, transparent 50%),
+      radial-gradient(1.5px 1.5px at 50% 78%, rgba(220,228,238,.09) 50%, transparent 50%),
+      radial-gradient(1px 1px at 82% 66%, rgba(220,228,238,.10) 50%, transparent 50%),
+      linear-gradient(to top, rgba(25,31,41,.95), rgba(23,29,39,.55) 55%, transparent);
+    border-radius: 100% 100% 0 0 / 30% 30% 0 0;
+  }
+  #beachWritings { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+  .sand-word {
+    position: absolute; font-size: 13px; letter-spacing: .16em; line-height: 1.9;
+    color: rgba(220,228,238,.62); max-width: 46%; text-align: center;
+    text-shadow: 0 1px 2px rgba(10,15,24,.85);
+    transform: rotate(var(--rot, 0deg));
+    transition: opacity 2.8s ease, filter 2.8s ease, transform 2.8s ease;
+  }
+  .sand-word.demo { font-size: 16px; max-width: none; white-space: nowrap; color: rgba(220,228,238,.7); }
+  .wave {
+    position: absolute; left: -30%; width: 160%; bottom: -2%; pointer-events: none;
+    background: linear-gradient(to top, rgba(96,126,166,.20), rgba(96,126,166,.07) 65%, transparent);
+    border-radius: 46% 54% 0 0 / 90% 75% 0 0;
+    transition: height 2.5s ease;
+  }
+  .wave::before {
+    content: ""; position: absolute; top: -2px; left: 8%; right: 8%; height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(220,228,238,.32), transparent);
+    border-radius: 50%; filter: blur(1.5px);
+  }
+  .w-back { height: 34%; z-index: 3; animation: waveBack 13s ease-in-out infinite alternate; }
+  .w-front { height: 27%; z-index: 4; animation: waveFront 9s ease-in-out infinite alternate; animation-delay: -4s; }
+  @keyframes waveBack { from { transform: translate(-2.5%, 9%); } to { transform: translate(2.5%, -6%); } }
+  @keyframes waveFront { from { transform: translate(3%, 8%); } to { transform: translate(-3%, -10%); } }
+  .beach.surge .w-front { animation-duration: 2s; height: 40%; }
+  .beach.surge .w-back { animation-duration: 2.9s; height: 46%; }
+  .beach-hint {
+    position: absolute; top: 10px; right: 14px; z-index: 5;
+    font-size: 11px; color: #4d5768; letter-spacing: .18em;
+    pointer-events: none;
   }
   .past-entry {
     margin-top: 26px; background: none; border: none; cursor: pointer;
@@ -225,6 +268,13 @@
       <p class="put-note" id="putNote"></p>
       <button class="past-entry" id="pastBtn">往 事</button>
     </div>
+    <div class="beach" id="beach" title="长按沙滩，看浪如何抚平字迹">
+      <div class="beach-sand"></div>
+      <div id="beachWritings"></div>
+      <div class="wave w-back"></div>
+      <div class="wave w-front"></div>
+      <p class="beach-hint">长按沙滩 · 看浪如何抚平字迹</p>
+    </div>
   </section>
 
   <!-- 静坐 -->
@@ -246,7 +296,7 @@
 <div class="veil" id="pastVeil">
   <div class="past-panel">
     <h3>那些已经飘走的事</h3>
-    <p class="past-sub">它们曾真实地压在心上。<br>如今隔着一段日子看回去，大多已经轻得像烟。</p>
+    <p class="past-sub">它们曾落在沙滩上，被浪一遍遍抚平。<br>这里的字，替你把日期留住。</p>
     <div class="past-list" id="pastList"></div>
     <button class="mode-btn" id="pastClose">合 上</button>
   </div>
@@ -268,6 +318,7 @@
       b.classList.add("active");
       Object.keys(sections).forEach(function (k) { sections[k].classList.toggle("show", k === b.dataset.mode); });
       if (b.dataset.mode === "sit") resetSit();
+      if (b.dataset.mode === "put") renderBeach();
     });
   });
 
@@ -459,25 +510,58 @@
       worryText.focus();
       return;
     }
+    var short = t.length > 40 ? t.slice(0, 40) + "……" : t;
+    var stamp = Date.now();
+    /* 字从输入框飘落到沙滩 */
     var el = document.createElement("div");
     el.className = "drift serif";
-    el.textContent = t.length > 40 ? t.slice(0, 40) + "……" : t;
+    el.textContent = short;
     var r = worryText.getBoundingClientRect();
-    el.style.left = r.left + "px";
-    el.style.top = (r.bottom + 6) + "px";
+    var startX = r.left + Math.min(r.width * 0.25, 120);
+    var startY = Math.max(80, r.top - 8);
+    el.style.left = startX + "px";
+    el.style.top = startY + "px";
+    el.style.opacity = "0";
     document.body.appendChild(el);
-    setTimeout(function () { el.remove(); }, 5700);
+    var b = beach.getBoundingClientRect();
+    var tx = b.left + b.width * (0.18 + Math.random() * 0.5) - startX;
+    var ty = b.top + b.height * (0.56 + Math.random() * 0.28) - startY;
+    var rot = (Math.random() * 6 - 3).toFixed(1);
+    function land() {
+      el.remove();
+      spawnSandWord(short, stamp,
+        ((startX + tx - b.left) / b.width) * 100,
+        ((startY + ty - b.top) / b.height) * 100,
+        rot);
+    }
+    if (el.animate) {
+      var drop = el.animate([
+        { transform: "translate(0,0) scale(1) rotate(0deg)", opacity: 0 },
+        { transform: "translate(" + tx * 0.14 + "px,-44px) scale(.95) rotate(1.5deg)", opacity: .95, offset: .24 },
+        { transform: "translate(" + tx * 0.58 + "px," + ty * 0.32 + "px) scale(.8) rotate(-1deg)", opacity: .9, offset: .58 },
+        { transform: "translate(" + tx + "px," + ty + "px) scale(.62) rotate(" + rot + "deg)", opacity: .8 }
+      ], { duration: 3400, easing: "cubic-bezier(.42,.08,.46,.94)" });
+      drop.onfinish = land;
+      setTimeout(function () { if (drop.playState !== "finished") drop.finish(); }, 3800);
+    } else {
+      el.style.transition = "transform 3.4s ease-in-out, opacity 1.2s";
+      requestAnimationFrame(function () {
+        el.style.transform = "translate(" + tx + "px," + ty + "px) scale(.62)";
+        el.style.opacity = ".8";
+      });
+      setTimeout(land, 3500);
+    }
     worryText.value = "";
     putCount++;
     try { localStorage.setItem("jingjiao.putdown", String(putCount)); } catch (e) {}
-    worries.push({ t: t.length > 500 ? t.slice(0, 500) : t, d: Date.now() });
+    worries.push({ t: t.length > 500 ? t.slice(0, 500) : t, d: stamp });
     if (worries.length > 300) worries = worries.slice(worries.length - 300);
     saveWorries();
     chime(345);
     var msgs = [
-      "它不会消失，但今晚可以先放在这里",
+      "它落在了沙滩上，浪会替你慢慢抚平",
       "你已经看过它一眼了，这就够了",
-      "它随烟散了，也被悄悄收进了往事",
+      "一个小时后，沙上就平了——时间站在你这边",
       "夜还长，事不急"
     ];
     putNote.style.opacity = 0;
@@ -537,6 +621,107 @@
   pastVeil.addEventListener("click", function (e) {
     if (e.target === pastVeil) pastVeil.classList.remove("show");
   });
+
+  /* ---------- 记忆沙滩 ---------- */
+  var beach = document.getElementById("beach"),
+      beachWritings = document.getElementById("beachWritings"),
+      BEACH_MS = 3600000; /* 一小时，浪把字彻底抚平 */
+  function hash01(n) { var x = Math.sin(n * 12.9898) * 43758.5453; return x - Math.floor(x); }
+  function applyErosion(el, d) {
+    var e = Math.min(1, Math.max(0, (Date.now() - d) / BEACH_MS));
+    el.style.opacity = ((1 - e) * 0.6 + 0.03).toFixed(3);
+    el.style.filter = "blur(" + (e * 5).toFixed(2) + "px)";
+    el.style.transform = "rotate(var(--rot,0deg)) translateY(" + (e * 8).toFixed(1) + "px)";
+    return e;
+  }
+  function makeSandWord(shortText, d, xPct, yPct, rot) {
+    var el = document.createElement("div");
+    el.className = "sand-word serif";
+    el.textContent = shortText;
+    el.dataset.d = String(d);
+    el.style.left = xPct.toFixed(1) + "%";
+    el.style.top = yPct.toFixed(1) + "%";
+    el.style.setProperty("--rot", (rot || 0) + "deg");
+    return el;
+  }
+  function spawnSandWord(shortText, d, xPct, yPct, rot) {
+    var el = makeSandWord(shortText, d, xPct, yPct, rot);
+    el.style.opacity = "0";
+    el.style.filter = "blur(1px)";
+    el.style.transform = "rotate(var(--rot,0deg)) translateY(-6px) scale(1.12)";
+    beachWritings.appendChild(el);
+    /* 落定：像字迹轻轻压进沙里 */
+    setTimeout(function () { applyErosion(el, d); }, 60);
+  }
+  function renderBeach() {
+    if (!beachWritings) return;
+    beachWritings.innerHTML = "";
+    worries.forEach(function (w) {
+      if (Date.now() - w.d >= BEACH_MS) return;
+      var h1 = hash01(w.d), h2 = hash01(w.d + 1), h3 = hash01(w.d + 2);
+      var el = makeSandWord(w.t.length > 40 ? w.t.slice(0, 40) + "……" : w.t, w.d,
+        12 + h1 * 44, 54 + h2 * 26, (h3 * 8 - 4).toFixed(1));
+      applyErosion(el, w.d);
+      beachWritings.appendChild(el);
+    });
+  }
+  /* 每 30 秒让浪再抚一遍：字随真实时间变淡、变模糊、微微下沉 */
+  setInterval(function () {
+    if (!sections.put.classList.contains("show")) return;
+    var kids = beachWritings.children;
+    for (var i = kids.length - 1; i >= 0; i--) {
+      var el = kids[i];
+      if (el.classList.contains("demo")) continue;
+      var e = applyErosion(el, parseInt(el.dataset.d, 10));
+      if (e >= 1 && !el.dataset.gone) {
+        el.dataset.gone = "1";
+        setTimeout(function (x) { return function () { x.remove(); }; }(el), 3200);
+      }
+    }
+  }, 30000);
+  /* 长按沙滩：12 秒看完浪抚平一小时的字迹 */
+  var pressTimer = null, demoing = false, pressX = 0, pressY = 0;
+  beach.addEventListener("pointerdown", function (e) {
+    clearTimeout(pressTimer);
+    pressX = e.clientX; pressY = e.clientY;
+    pressTimer = setTimeout(startBeachDemo, 650);
+  });
+  ["pointerup", "pointerleave", "pointercancel"].forEach(function (ev) {
+    beach.addEventListener(ev, function () { clearTimeout(pressTimer); }, { passive: true });
+  });
+  beach.addEventListener("pointermove", function (e) {
+    if (Math.abs(e.clientX - pressX) > 12 || Math.abs(e.clientY - pressY) > 12) clearTimeout(pressTimer);
+  }, { passive: true });
+  function startBeachDemo() {
+    if (demoing) return;
+    demoing = true;
+    beach.classList.add("surge");
+    var text = worries.length ? worries[worries.length - 1].t : "一件小小的心事";
+    if (text.length > 22) text = text.slice(0, 22) + "……";
+    var el = document.createElement("div");
+    el.className = "sand-word demo serif";
+    el.textContent = text;
+    el.style.left = "34%";
+    el.style.top = "64%";
+    el.style.opacity = ".7";
+    beachWritings.appendChild(el);
+    var t0 = Date.now(), DUR = 12000;
+    var iv = setInterval(function () {
+      var p = Math.min(1, (Date.now() - t0) / DUR);
+      el.style.opacity = ((1 - p) * 0.68 + 0.02).toFixed(3);
+      el.style.filter = "blur(" + (p * 6).toFixed(2) + "px)";
+      el.style.transform = "translateY(" + (p * 11).toFixed(1) + "px)";
+      if (p >= 1) {
+        clearInterval(iv);
+        setTimeout(function () {
+          el.remove();
+          beach.classList.remove("surge");
+          demoing = false;
+        }, 900);
+      }
+    }, 120);
+  }
+  renderBeach();
 
   /* ---------- 静坐 ---------- */
   var sitTime = document.getElementById("sitTime"),
